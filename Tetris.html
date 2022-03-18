@@ -1,0 +1,604 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+	<title>Tetris</title>
+</head>
+<body>
+<div style="position: absolute; width: 1200; height: 600;">
+	<div style="position: relative; float: left; width: 120; height: 150; background: red; color: black; font-size: 18; font-weight: 600; text-align: center; top: 200;">
+		NEXT PIECE
+		<table id="nextPiece" style="margin: 0 20 20 20; background: black;">
+			<tr><td id="nextPieceX0Y3"><td id="nextPieceX1Y3"><td id="nextPieceX2Y3"></tr>
+			<tr><td id="nextPieceX0Y2"><td id="nextPieceX1Y2"><td id="nextPieceX2Y2"></tr>
+			<tr><td id="nextPieceX0Y1"><td id="nextPieceX1Y1"><td id="nextPieceX2Y1"></tr>
+			<tr><td id="nextPieceX0Y0"><td id="nextPieceX1Y0"><td id="nextPieceX2Y0"></tr>
+		</table>
+	</div>
+	<div style="position: relative; float: left; width: 350; height: 600; color: red; font-weight: 600;">
+		<table id="grid"></table>
+	</div>
+	<div style="background: black; float: left; color: red; font-size: 36; font-weight: 600; height: 500; width: 600;">
+		<div>
+			<p style="font-size: 72; padding: 0; margin: 0;">TETRIS</p>
+			<p style="float: left">HIGH SCORE: </p>
+			<p id="level" style="float: right">LEVEL: 1</p>
+			<p id="highScore" style="float: left;">0</p>
+		</div>
+		<div style=" font-size: 16;">
+			<div style="position: relative; float: left; width: 220;">
+				<p id="buttonP" style="float: left;" onclick="window.alert('PAUSE')"><br>PAUSE</button>
+				<p id="buttonP" style="float: left;" onclick="control.level.select('easy'); control.newGame()">NEW GAME<br>EASY MODE</button>
+			</div>
+			<div style="position: relative; float: left; width: 220;">
+				<p id="buttonP" style="float: right;" onclick="grid.popup()"><br>GRID</button>
+				<p id="buttonP" style="float: right;" onclick="control.level.select('challenge'); control.newGame()">NEW GAME<br>CHALLENGE MODE</button>
+			</div>
+		</div>
+		
+		<p style="float: left; font-size: 22; text-align: left;">
+			<table style="float: left; font-size: 26; text-align: left;"">
+				<tr><td id="controls">Controls:</tr></td>
+				<tr><td id="controls">Up/Down Arrows:</td><td id="controls">Spin Piece</tr></td>
+				<tr><td id="controls">Left/Right Arrows:</td><td id="controls">Move Piece</tr></td>
+				<tr><td id="controls">Space Bar:</td><td id="controls">Rapid Drop</tr></td>
+				<tr><td id="controls">Enter:</td><td id="controls">Pause</tr></td>
+			</table>
+		</p>
+	</div>
+</div>
+<style>
+	td {background: lightgray; width: 23px; height: 23px;}
+	body {background: black}
+	#buttonP {background: red; color: black; width: 100; height: 60; text-align: center; margin: 10 40 10 40 ;}
+	#controls {background: black; color: red; width: 250; height: 35; font-weight: 600;}
+</style>
+
+<script>
+
+var grid = new Object();
+grid.data = [];
+grid.create = function() {
+	for (t=0; t<12; t+=1) {
+		grid.data[t] = [];
+		for (i=0; i<24; i+=1) {
+			grid.data[t][i] = 0;
+		}
+	}
+	for (i=0; i<24; i+=1) {
+		var row = document.getElementById("grid").appendChild(document.createElement("tr"))
+		row.id = "row"+i;
+		for (t=0; t<12; t+=1) {
+			var data = document.getElementById("row"+i).appendChild(document.createElement("td"))
+			data.id = "dataX"+t+"Y"+(23-i);
+			data.style = "background: lightgray; width: 23px; height: 23px;"
+		}
+	}
+}
+grid.render = function() {
+	draw.refresh()
+	for (t=0; t<12; t+=1) {
+		for (i=0; i<24; i+=1) {
+			if (grid.data[t][i] !== 0) {
+				document.getElementById("dataX"+t+"Y"+i).style = "background: "+grid.data[t][i]+"; width: 23px; height: 23px;";
+			}
+		}
+	}
+	document.getElementById("highScore").innerHTML = control.points;
+}
+grid.full = function() {
+	var is = false;
+	for (i=0; i<12; i+=1) {
+		if (grid.data[i][23] !== 0 || grid.data[i][22] !== 0 || grid.data[i][21]) {
+			is = true;
+		}
+	}
+	return is;
+}
+grid.clearLine = function() {
+	var is = false;
+	var lines = [];
+	var temp = [];
+	for (i=0; i<24; i+=1) {
+		for (t=0; t<12; t+=1) {
+			if (grid.data[t][i] !== 0) {
+				temp.push(grid.data[t][i])
+			}
+		}
+		if (temp.length === 12) {
+			is = true;
+			lines.push(i)
+		}
+		temp = []
+	}
+	if (is === true) {
+		l = lines.length
+		for (i=0; i<l; i+=1) {
+			p = lines.pop()
+			for (t=0; t<12; t+=1) {
+				grid.data[t][p] = grid.data[t][p+1]
+				for (d=p; d<21; d+=1) {
+					grid.data[t][d] = grid.data[t][d+1]
+				}
+			}
+			control.points += 12*(i+1);
+			control.level.check();
+		}
+	}
+	document.getElementById("highScore").innerHTML = control.points;
+}
+grid.popup = function() {
+	var temp = []
+	var string = ""
+	for (i=0; i<24; i+=1) {
+		var row = []
+		for (t=0; t<12; t+=1) {
+			row.push(grid.data[t][i])
+		}
+		temp.push(row)
+	}
+	for (i=0; i<24; i+=1) {
+		string += temp[23-i] + "\n"
+	}
+	window.alert(string)
+	window.alert(control.dropTime)
+}
+
+var pieces = new Object();
+pieces.regL = function(x, y, rotation) {
+	if (rotation === 0) {
+		points = [[x,y],[x,y+1],[x,y+2],[x+1,y]]
+	} else if (rotation === 1) {
+		points = [[x,y],[x+1,y],[x+2,y],[x,y-1]]
+	} else if (rotation === 2) {
+		points = [[x,y],[x,y-1],[x,y-2],[x-1,y]]
+	} else if (rotation === 3) {
+		points = [[x,y],[x-1,y],[x-2,y],[x,y+1]]
+	}
+	points.push("green")
+	return points;
+}
+pieces.backL = function(x, y, rotation) {
+	if (rotation === 0) {
+		points = [[x,y],[x,y+1],[x,y+2],[x-1,y]]
+	} else if (rotation === 1) {
+		points = [[x,y],[x+1,y],[x+2,y],[x,y+1]]
+	} else if (rotation === 2) {
+		points = [[x,y],[x,y-1],[x,y-2],[x+1,y]]
+	} else if (rotation === 3) {
+		points = [[x,y],[x-1,y],[x-2,y],[x,y-1]]
+	}
+	points.push("orange")
+	return points;
+}
+pieces.line = function(x, y, rotation) {
+	if (rotation === 0) {
+		points = [[x,y],[x,y-1],[x,y+1],[x,y+2]]
+	} else if (rotation === 1) {
+		points = [[x,y],[x-2,y],[x-1,y],[x+1,y]]
+	} else if (rotation === 2) {
+		points = [[x,y],[x,y-2],[x,y-1],[x,y+1]]
+	} else if (rotation === 3) {
+		points = [[x,y],[x+2,y],[x+1,y],[x-1,y]]
+	}
+	points.push("yellow")
+	return points;
+}
+pieces.square = function(x, y, rotation) {
+	points = [[x,y],[x+1,y],[x,y+1],[x+1,y+1],"red"]
+	return points;
+}
+pieces.leftBent = function(x, y, rotation) {
+	if (rotation === 0) {
+		points = [[x,y],[x,y+1],[x-1,y+1],[x+1,y]]
+	} else if (rotation === 1) {
+		points = [[x,y],[x+1,y],[x+1,y+1],[x,y-1]]
+	} else if (rotation === 2) {
+		points = [[x,y],[x-1,y],[x,y-1],[x+1,y-1]]
+	} else if (rotation === 3) {
+		points = [[x,y],[x-1,y],[x-1,y-1],[x,y+1]]
+	}
+	points.push("blue")
+	return points;
+}
+pieces.rightBent = function(x, y, rotation) {
+	if (rotation === 0) {
+		points = [[x,y],[x-1,y],[x,y+1],[x+1,y+1]]
+	} else if (rotation === 1) {
+		points = [[x,y],[x,y+1],[x+1,y],[x+1,y-1]]
+	} else if (rotation === 2) {
+		points = [[x,y],[x,y-1],[x-1,y-1],[x+1,y]]
+	} else if (rotation === 3) {
+		points = [[x,y],[x,y-1],[x-1,y],[x-1,y+1]]
+	}
+	points.push("purple")
+	return points;
+}
+pieces.tee = function(x, y, rotation) {
+	if (rotation === 0) {
+		points = [[x,y],[x,y-1],[x+1,y],[x-1,y]]
+	} else if (rotation === 1) {
+		points = [[x,y],[x-1,y],[x,y+1],[x,y-1]]
+	} else if (rotation === 2) {
+		points = [[x,y],[x-1,y],[x,y+1],[x+1,y]]
+	} else if (rotation === 3) {
+		points = [[x,y],[x+1,y],[x,y+1],[x,y-1]]
+	}
+	points.push("turquoise")
+	return points;
+}
+
+
+var current = {}
+current.create = function() {
+	var temp = {}
+	temp.start = [5,21];
+	temp.height = [];
+	temp.left = [];
+	temp.right = [];
+	temp.type = "";
+	temp.position = [];
+	temp.rotation = 0;
+	temp.func = 0;
+	return temp;
+}
+current.piece = current.create()
+current.nextPiece = current.create()
+current.newPiece = function(np) {
+	var typeNum = Math.floor(Math.random()*7);
+	if (typeNum === 0) {
+		np.type = "line";
+		np.func = pieces.line;
+		np.height = [-2,0,-1,0];
+		np.left = [0,-2,0,-1];
+		np.right = [0,1,0,2];
+	} else if (typeNum === 1) {
+		np.type = "square";
+		np.start[1] = 22;
+		np.height = [0,0,0,0];
+		np.left = [0,0,0,0];
+		np.right = [1,1,1,1];
+		np.func = pieces.square;
+	} else if (typeNum === 2) {
+		np.type = "regL";
+		np.height = [0,-1,-2,0];
+		np.left = [0,0,-1,-2];
+		np.right = [1,2,0,0];
+		np.func = pieces.regL;
+	} else if (typeNum === 3) {
+		np.type = "backL";
+		np.start[0] = 6;
+		np.height = [0,0,-2,-1];
+		np.left = [-1,0,0,-2];
+		np.right = [0,2,1,0];
+		np.func = pieces.backL;
+	} else if (typeNum === 4) {
+		np.type = "leftBent";
+		np.start[0] = 6;
+		np.start[1] = 22;
+		np.height = [0,-1,-1,-1];
+		np.left = [-1,-1,-1,0];
+		np.right = [];
+		np.func = pieces.leftBent;
+	} else if (typeNum === 5) {
+		np.type = "rightBent";
+		np.start[1] = 22;
+		np.height = [0,-1,-1,-1];
+		np.left = [-1,0,-1,-1];
+		np.right = [1,1,1,0];
+		np.func = pieces.rightBent;
+	} else if (typeNum === 6) {
+		np.type = "tee";
+		np.start[1] = 23;
+		np.height = [-1,-1,0,-1];
+		np.left = [-1,-1,-1,0];
+		np.right = [1,0,1,1,];
+		np.func = pieces.tee;
+	}
+}
+
+var draw = new Object();
+draw.refresh = function () {
+	for (gridX=0; gridX<12; gridX+=1) {
+		for (gridY=0; gridY<24; gridY+=1) {
+			document.getElementById("dataX"+gridX+"Y"+gridY).style = "background: lightgray; width: 23px; height: 23px;"
+		}
+	}
+}
+draw.current = function() {
+	grid.render()
+	for (i=0; i<4; i+=1) {
+		var posX = current.piece.position[i][0]
+		var posY = current.piece.position[i][1]
+		document.getElementById("dataX"+posX+"Y"+posY).style = "background: "+current.piece.position[4]+"; width: 23px; height: 23px;"
+	}
+}
+draw.next = function() {
+	for (i=0; i<4; i+=1) {
+		for (j=0; j<3; j+=1) {
+			document.getElementById("nextPieceX"+j+"Y"+i).style = "background: lightgray; width: 23px; height: 23px;"
+		}
+	}
+	for (i=0; i<4; i+=1) {
+		var posX = current.nextPiece.position[i][0]
+		var posY = current.nextPiece.position[i][1]
+		document.getElementById("nextPieceX"+posX+"Y"+posY).style = "background: "+current.nextPiece.position[4]+"; width: 23px; height: 23px;"
+	}
+}
+
+var transform = {}
+transform.rotate = function() {
+	var temp = current.piece.func(current.piece.position[0][0], current.piece.position[0][1], current.piece.rotation);
+	if (transform.test(temp) !== false) {
+		current.piece.position = temp;
+	} else {
+		if (temp[0][0] > 5) {
+			temp = current.piece.func(current.piece.position[0][0]-1, current.piece.position[0][1], current.piece.rotation)
+		} else if (temp[0][0] < 5) {
+			temp = current.piece.func(current.piece.position[0][0]+1, current.piece.position[0][1], current.piece.rotation)
+		}
+		if (transform.test(temp) !== false) {
+			current.piece.position = temp;
+		} else {
+			if (temp[0][0] > 5) {
+				temp = current.piece.func(current.piece.position[0][0]-2, current.piece.position[0][1], current.piece.rotation)
+			} else if (temp[0][0] < 5) {
+				temp = current.piece.func(current.piece.position[0][0]+2, current.piece.position[0][1], current.piece.rotation)
+			}
+			if (transform.test(temp) !== false) {
+				current.piece.position = temp;
+			}
+		}
+	}
+}
+transform.move = function(dir) {
+	var temp = current.piece.func(current.piece.position[0][0]+dir, current.piece.position[0][1], current.piece.rotation);
+	if (transform.test(temp) !== false) {
+		current.piece.position = temp;
+	} else {return};
+}
+transform.test = function(pos) {
+	for (i=0; i<4; i+=1) {
+		if (pos[i][0] > 11 || pos[i][0] < 0 || grid.data[pos[i][0]][pos[i][1]] !== 0 || pos[i][1] < 0) {
+			return false;
+		}
+	}
+}
+
+var control = new Object();
+control.event = function() {
+	if (event.key === "ArrowUp" || event.key === "w") {
+		control.keys[0]()
+	} else if (event.key === "ArrowDown" || event.key === "s") {
+		control.keys[1]()
+	} else if (event.key === "ArrowLeft" || event.key === "a") {
+		control.keys[2]()
+	} else if (event.key === "ArrowRight" || event.key === "d") {
+		control.keys[3]()
+	} else if (event.key === " ") {
+		control.keys[4]()
+	} else if (event.key === "Enter") {
+		control.keys[5]()
+	} else {return}
+}
+control.dropTime = 500;
+control.points = 0;
+control.u = function() {
+	current.piece.rotation -= 1;
+	control.rotate()
+}
+control.d = function() {
+	current.piece.rotation += 1;
+	control.rotate()
+}
+control.l = function() {
+	transform.move(-1);
+	draw.current();
+}
+control.r = function() {
+	transform.move(1);
+	draw.current();
+}
+control.pause = function() {
+	window.alert("PAUSE")
+}
+control.rotate = function() {
+	if (current.piece.rotation > 3) {
+		current.piece.rotation = 0
+	} else if (current.piece.rotation < 0) {
+		current.piece.rotation = 3
+	}
+	transform.rotate()
+	draw.current()
+}
+control.func = function() {control.drop();}
+control.game = function() {
+	control.level.lvl = 1;
+	control.level.next = 100;
+	control.dropTime = 500;
+	control.level.update();
+	control.points = 0;
+	current.newPiece(current.piece)
+	current.newPiece(current.nextPiece)
+	current.piece.position = current.piece.func(current.piece.start[0], current.piece.start[1], current.piece.rotation)
+	current.nextPiece.position = current.nextPiece.func(1, 1, 0)
+	draw.current()
+	draw.next()
+	setTimeout(control.drop, control.dropTime)
+}
+control.newGame = function() {
+	var next = 0;
+	var time = 500;
+	control.func = 0;
+	setTimeout(three, time);
+	current.piece = current.create();
+	current.nextPiece = current.create();
+	function three() {
+		draw.refresh()
+		for (i=0; i<3; i+=1) {
+			document.getElementById("dataX"+(i+4)+"Y9").style = "background: red; width: 23px; height: 23px;"
+			document.getElementById("dataX"+(i+4)+"Y13").style = "background: red; width: 23px; height: 23px;"
+			document.getElementById("dataX"+(i+4)+"Y17").style = "background: red; width: 23px; height: 23px;"
+		}
+		for (i=0; i<9; i+=1) {
+			document.getElementById("dataX7Y"+(i+9)).style = "background: red; width: width: 23px; height: 23px;"
+		}
+		next = two;
+		setTimeout(refresh, time);
+	}
+	function two() {
+		for (i=0; i<6; i+=1) {
+			document.getElementById("dataX"+(i+3)+"Y9").style = "background: yellow; width: 23px; height: 23px;"
+		}
+		for (i=0; i<5; i+=1) {
+			document.getElementById("dataX"+(i+4)+"Y"+(i+10)).style = "background: yellow; width: 23px; height: 23px;"
+		}
+		for (i=0; i<3; i+=1) {
+			document.getElementById("dataX"+(8-i)+"Y"+(15+i)).style = "background: yellow; width: 23px; height: 23px;"
+			document.getElementById("dataX"+(3+i)+"Y"+(15+i)).style = "background: yellow; width: 23px; height: 23px;"
+		}
+		next = one;
+		setTimeout(refresh, time);
+	}
+	function one() {
+		for (i=0; i<5; i+=1) {
+			document.getElementById("dataX"+(i+4)+"Y9").style = "background: green; width: 23px; height: 23px;"
+		}
+		for (i=0; i<6; i+=1) {
+			document.getElementById("dataX6Y"+(i+10)).style = "background: green; width: 23px; height: 23px;"
+		}
+		for (i=0; i<3; i+=1) {
+			document.getElementById("dataX"+(6-i)+"Y"+(16-i)).style = "background: green; width: 23px; height: 23px;"
+		}
+		next = loadNewGame;
+		setTimeout(refresh, time);
+	}
+	function refresh() {
+		draw.refresh()
+		setTimeout(next, time)
+	}
+	function loadNewGame() {
+		next = 0;
+		draw.refresh()
+		document.getElementById("grid").innerHTML = "";
+		grid.data = [];
+		grid.create()
+		control.func = control.drop;
+		control.game()
+	}
+}
+control.level = {
+	lvl: 1,
+	next: 100,
+	mode: "easy",
+	update: function() {
+		var exp = 0; 
+		for (i=1; i<=this.lvl; i+=1){
+			var add = (i*100); exp += add;
+		}
+		exp -= this.lvl
+		this.next = exp;
+		this.draw();
+	},
+	check: function() {
+		if (control.points > this.next) {
+			this.lvl += 1;
+			this.update();
+			if (this.mode === "challenge") {
+				control.dropTime -= 35;
+				if (control.dropTime < 50) {
+					control.dropTime = 50;
+				}
+			}
+		}
+	},
+	draw: function() {
+		document.getElementById("level").innerHTML = "LEVEL: "+this.lvl;
+	},
+	select: function(mode) {
+		this.mode = mode;
+		this.draw
+	}
+}
+control.interface = {
+	round: function() {
+		setTimeout(control.drop, control.dropTime/2)
+	},
+	reset: function() {
+		current.piece = current.nextPiece;
+		current.piece.position = current.piece.func(current.piece.start[0], current.piece.start[1], current.piece.rotation)
+		current.nextPiece = current.create();
+		current.newPiece(current.nextPiece);
+		current.nextPiece.position = current.nextPiece.func(1,1,0)
+		draw.next()
+		grid.clearLine()
+		setTimeout(this.r, control.dropTime+100);
+	},
+	r: function() {
+		control.rapidFunc = control.rapidDrop
+		control.keys = [control.u, control.d, control.l, control.r,control.rapidDrop,control.pause]
+		control.isRapidDropping = false;
+		control.interface.round();
+	}
+}
+control.drop = function() {
+	if (control.isRapidDropping !== false) {
+		return;
+	}
+	var temp = current.piece.func(current.piece.position[0][0], current.piece.position[0][1]-1, current.piece.rotation)
+	if (transform.test(temp) !== false) {
+		control.rapidFunc = control.rapidDrop;
+		current.piece.position = temp;
+		draw.current();
+		setTimeout(control.drop, control.dropTime)
+	} else {
+		control.fix()
+	}
+}
+control.rapidFunc = false;
+control.isRapidDropping = false;
+control.rapidDrop = function() {
+	control.isRapidDropping = true;
+	control.keys = [control.u, control.d, control.l, control.r,0,control.pause]
+	control.func = 0;
+	var temp = current.piece.func(current.piece.position[0][0], current.piece.position[0][1]-1, current.piece.rotation)
+	if (transform.test(temp) !== false) {
+		current.piece.position = temp;
+		draw.current();
+		setTimeout(control.rapidFunc, 1)
+	} else {
+		control.fix()
+		return
+	}
+	control.points += 1;
+}
+control.fix = function() {
+	control.rapidFunc = false;
+	if (grid.full()) {
+		return control.gameOver()
+	}
+	for (i=0; i<4; i+=1) {
+		var x = current.piece.position[i][0];
+		var y = current.piece.position[i][1];
+		grid.data[x][y] = current.piece.position[4];
+	}
+	grid.render();
+	if (grid.full()) {
+		return control.gameOver()
+	}
+	control.level.check();
+	control.interface.reset()
+}
+control.keys = [control.u, control.d, control.l, control.r,control.rapidDrop,control.pause]
+control.gameOver = function() {
+	delete current.piece;
+	control.isRapidDropping = true;
+	window.alert("Game Over!!")
+}
+
+document.addEventListener("keydown", control.event, false);
+grid.create();
+
+</script>
+
+</body>
+</html>
